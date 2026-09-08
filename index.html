@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mi Negocio Claro — App V1</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:linear-gradient(145deg,#e8faf6,#f6f2ff);color:#263238}
+.app{max-width:430px;min-height:100vh;margin:auto;padding:20px 17px}.card{background:#fff;border-radius:26px;padding:25px 20px;box-shadow:0 12px 35px rgba(30,45,55,.11)}
+.screen{display:none}.screen.active{display:block}.hero{text-align:center;font-size:52px}h1{text-align:center;font-size:31px;margin:7px 0}.tag{text-align:center;color:#667085}.quote{text-align:center;line-height:1.55;color:#5f6368;margin:20px 0}
+h2{font-size:23px;margin:0 0 8px}.muted{color:#68737d;line-height:1.45}.progress{text-align:center;font-size:13px;color:#7b8794;margin-bottom:16px}
+label{display:block;font-weight:700;margin:14px 0 7px}input,select{width:100%;padding:14px;border:1px solid #d7dde3;border-radius:12px;font-size:16px;background:#fff}
+button{width:100%;padding:15px;margin-top:12px;border:0;border-radius:15px;background:#35b89a;color:#fff;font-size:16px;font-weight:700}button.secondary{background:#eef7f5;color:#267d6c}
+.metric{padding:13px;margin:8px 0;background:#f7f9fa;border-radius:14px}.metric b{float:right}.box{margin-top:12px;padding:15px;border-left:5px solid #35b89a;background:#edf9f5;border-radius:12px;line-height:1.55}.small{text-align:center;color:#7b8794;font-size:12px;margin-top:12px}
+.status-red{border-left-color:#d9534f;background:#fff0ef}.status-yellow{border-left-color:#e6a72e;background:#fff8e7}.status-blue{border-left-color:#5b8def;background:#eef4ff}
+</style>
+</head>
+<body>
+<div class="app">
+
+<section id="s1" class="screen active"><div class="card">
+<div class="hero">✨</div><h1>Mi Negocio Claro</h1><span style="display:inline-block;margin-left:8px;padding:4px 8px;border-radius:999px;font-size:11px;background:#eef6f5;color:#315f5a;">APP V1</span>
+<div class="tag">Entiende tus números. Decide mejor.</div>
+<p class="quote">Tu negocio tiene una historia.<br>Nosotros te ayudamos a entenderla.</p>
+<button onclick="show(2)">COMENZAR</button>
+<div class="small">No necesitas conocimientos contables.</div>
+</div></section>
+
+<section id="s2" class="screen"><div class="card">
+<div class="progress">PASO 1 DE 3</div><h2>Primero, conozcamos tu negocio</h2>
+<p class="muted">Solo necesitamos algunos datos para personalizar tu experiencia.</p>
+<label>País</label><select id="country"><option>Chile</option><option>Colombia</option><option>México</option><option>Argentina</option><option>Brasil</option><option>Estados Unidos</option><option>España</option></select>
+<label>Moneda</label><select id="currency"><option value="$">$ — Moneda local</option><option value="US$">US$ — Dólar</option><option value="€">€ — Euro</option></select>
+<label>Tipo de negocio</label><select id="business"><option>Venta de productos</option><option>Servicios</option><option>Tienda física</option><option>Venta online</option><option>Comida</option><option>Otro</option></select>
+<button onclick="show(3)">CONTINUAR</button>
+</div></section>
+
+<section id="s3" class="screen"><div class="card">
+<div class="progress">PASO 2 DE 3</div><h2>¿Cómo estuvo tu negocio?</h2>
+<label>Ventas totales</label><input id="sales" type="number" value="2000" min="0">
+<label>Costos de productos o servicios</label><input id="costs" type="number" value="500" min="0">
+<label>Otros gastos</label><input id="expenses" type="number" value="1000" min="0">
+<label>Ganancia que quieres conseguir</label><input id="goal" type="number" value="800" min="0">
+<button onclick="analyze()">ANALIZAR MI NEGOCIO ✨</button>
+<div class="small">Puedes cambiar los datos para probar distintos negocios.</div>
+</div></section>
+
+<section id="s4" class="screen"><div class="card">
+<div class="progress">RESULTADO</div><h2>Esto es lo que tus números están diciendo</h2>
+<div class="metric">Ventas <b id="rSales"></b></div><div class="metric">Gastos totales <b id="rTotal"></b></div>
+<div class="metric">Ganancia estimada <b id="rProfit"></b></div><div class="metric">Margen de ganancia <b id="rMargin"></b></div>
+<div id="status" class="box"></div>
+<div id="radiografia" class="box"></div>
+<div id="consultant" class="box"></div>
+<div id="recommendations" class="box"></div>
+<div class="box">
+<b>💬 PREGÚNTALE A TU NEGOCIO</b>
+<p class="muted">Puedes elegir una pregunta o escribir la tuya. La analista tendrá en cuenta tus números y el tipo de negocio para darte una orientación más útil.</p>
+<div style="display:flex;flex-direction:column;gap:8px;margin:12px 0">
+<button class="secondary" onclick="setQuestion('¿Por qué estoy ganando tan poco?')">❓ ¿Por qué estoy ganando tan poco?</button>
+<button class="secondary" onclick="setQuestion('¿Dónde se me está yendo el dinero?')">💸 ¿Dónde se me está yendo el dinero?</button>
+<button class="secondary" onclick="setQuestion('¿Estoy cobrando muy barato?')">💰 ¿Estoy cobrando muy barato?</button>
+<button class="secondary" onclick="setQuestion('¿Cuánto tendría que vender para ganar más?')">📈 ¿Cuánto tendría que vender para ganar más?</button>
+<button class="secondary" onclick="setQuestion('¿Qué debería mejorar primero?')">🎯 ¿Qué debería mejorar primero?</button>
+<button class="secondary" onclick="setQuestion('¿Por cuál canal me conviene publicitar mi negocio?')">📣 ¿Por cuál canal me conviene publicitar mi negocio?</button>
+</div>
+<p class="muted"><b>✍️ ¿Tienes otra pregunta?</b><br>Escríbela con tus propias palabras.</p>
+<textarea id="question" rows="4" placeholder="Ejemplo: ¿Por cuál canal me conviene publicitar mi negocio?" style="width:100%;padding:13px;border:1px solid #d7dde3;border-radius:12px;font-size:16px;resize:vertical"></textarea>
+<button onclick="ask()">ANALIZAR MI PREGUNTA 🧠</button>
+<div id="answer" style="margin-top:13px"></div>
+</div>
+<button onclick="downloadReport()">📄 DESCARGAR MI INFORME</button>
+<button onclick="show(3)">CAMBIAR MIS NÚMEROS</button><button class="secondary" onclick="show(1)">VOLVER AL INICIO</button>
+</div></section>
+</div>
+
+<script>
+function show(n){document.querySelectorAll('.screen').forEach(function(x){x.classList.remove('active')});document.getElementById('s'+n).classList.add('active');scrollTo(0,0)}
+function data(){let s=+document.getElementById('sales').value||0,c=+document.getElementById('costs').value||0,e=+document.getElementById('expenses').value||0,g=+document.getElementById('goal').value||0,t=c+e,p=s-t,m=s?p/s:0;return{s,c,e,g,t,p,m}}
+function money(n){return document.getElementById('currency').value+Number(n).toLocaleString('es-CL',{maximumFractionDigits:0})}
+function analyze(){
+ let d=data();
+ document.getElementById('rSales').textContent=money(d.s);
+ document.getElementById('rTotal').textContent=money(d.t);
+ document.getElementById('rProfit').textContent=money(d.p);
+ document.getElementById('rMargin').textContent=(d.m*100).toFixed(1)+'%';
+
+ let costPct=d.s?d.c/d.s*100:0;
+ let expensePct=d.s?d.e/d.s*100:0;
+ let st,cls;
+ // Semáforo: la ganancia manda primero. Un margen de 25% exacto ya merece atención.
+ if(d.p<=0){
+   st='🔴 <b>CUIDADO</b><br>Hoy tus costos y gastos se están llevando todo lo que vendes o incluso más. Antes de pensar en crecer, necesitamos recuperar una ganancia positiva.';
+   cls='box status-red';
+ } else if(d.m<=.25){
+   st='🟡 <b>ATENCIÓN</b><br>Tu negocio sí está ganando, pero el margen es ajustado. Hay poco espacio para absorber aumentos de costos o gastos, así que conviene revisar dónde puedes mejorar.';
+   cls='box status-yellow';
+ } else if(d.m>=.40){
+   st='🟢 <b>VAS BIEN</b><br>Tu negocio está dejando un margen saludable. Ahora la clave es protegerlo y crecer sin que los costos y gastos se disparen.';
+   cls='box';
+ } else {
+   st='🔵 <b>OPORTUNIDAD</b><br>Tu negocio está generando ganancias y todavía hay espacio para mejorar el margen. Veamos dónde está la mejor oportunidad.';
+   cls='box status-blue';
+ }
+ let el=document.getElementById('status');el.className=cls;el.innerHTML=st;
+
+ let targetText='';
+ if(d.g<=d.p){
+   targetText='ya estás alcanzando o superando tu meta de '+money(d.g)+' con estos datos.';
+ } else if(d.m>0){
+   targetText='para ganar '+money(d.g)+' necesitarías vender aproximadamente '+money(d.g/d.m)+', manteniendo este mismo margen.';
+ } else {
+   targetText='primero necesitamos conseguir un margen positivo para calcular las ventas necesarias para tu meta.';
+ }
+ let rad='🩺 <b>LA RADIOGRAFÍA DE TU NEGOCIO</b><br><br>'+
+ '💰 <b>Ganancia:</b> te quedan '+money(d.p)+' después de costos y gastos.<br><br>'+ 
+ '🛒 <b>Costos:</b> representan aproximadamente '+costPct.toFixed(0)+'% de tus ventas.<br><br>'+ 
+ '💸 <b>Gastos:</b> representan aproximadamente '+expensePct.toFixed(0)+'% de tus ventas.<br><br>'+ 
+ '🎯 <b>Meta:</b> '+targetText;
+ document.getElementById('radiografia').innerHTML=rad;
+
+ let consult;
+ if(d.p<=0){
+   consult='🧠 <b>Si yo estuviera sentado contigo:</b><br><br>No intentaría arreglar todo a la vez. Empezaría por descubrir qué está pesando más: los costos o los gastos. Después revisaría los precios para conseguir que cada venta deje una ganancia positiva.';
+ } else if(d.m<=.25){
+   consult='🧠 <b>Si yo estuviera sentado contigo:</b><br><br>Tu negocio está ganando, pero el margen está justo. Antes de buscar muchísimas más ventas, revisaría qué gasto pesa más y si tus precios están dejando suficiente ganancia. La idea es mejorar el resultado sin complicarte.';
+ } else if(d.m>=.40){
+   consult='🧠 <b>Si yo estuviera sentado contigo:</b><br><br>Tu negocio está dejando un buen margen. Yo cuidaría lo que ya funciona y buscaría crecer de forma ordenada, poniendo atención para que los costos y gastos no crezcan al mismo ritmo que las ventas.';
+ } else {
+   consult='🧠 <b>Si yo estuviera sentado contigo:</b><br><br>Tu negocio está ganando y hay espacio para mejorar. Yo buscaría primero el punto que más está reduciendo tu ganancia: costos, gastos o precios. No haría muchos cambios de golpe.';
+ }
+ document.getElementById('consultant').innerHTML=consult;
+
+ let recs;
+ if(d.p<=0){
+   recs=[
+    '💸 <b>Primero revisaría los gastos:</b> identifica el gasto que más pesa y analiza si puedes reducirlo, negociarlo o eliminarlo.',
+    '🛒 <b>Después revisaría los costos:</b> compara precios de compra y busca alternativas sin afectar la calidad de lo que vendes.',
+    '💰 <b>Luego revisaría tus precios:</b> comprueba que lo que cobras cubra tus costos y gastos y deje una ganancia.'
+   ];
+ } else if(d.m<=.25){
+   if(expensePct>=costPct){
+     recs=[
+      '💸 <b>Empieza por los gastos:</b> representan aproximadamente '+expensePct.toFixed(0)+'% de tus ventas y son el punto que más pesa entre costos y gastos.',
+      '💰 <b>Revisa tus precios:</b> busca si tus servicios o productos pueden tener un precio que deje un margen más cómodo.',
+      '📈 <b>Mejora cada venta:</b> piensa en servicios adicionales, paquetes o formas de aumentar el valor de cada cliente.'
+     ];
+   } else {
+     recs=[
+      '🛒 <b>Empieza por los costos:</b> representan aproximadamente '+costPct.toFixed(0)+'% de tus ventas y son el punto que más pesa.',
+      '💰 <b>Revisa tus precios:</b> comprueba que cada venta esté dejando una ganancia suficiente después de todos los costos y gastos.',
+      '📈 <b>Mejora cada venta:</b> busca productos o servicios adicionales que aporten valor y mejoren el resultado.'
+     ];
+   }
+ } else if(d.m>=.40){
+   recs=[
+    '🛡️ <b>Cuida tu margen:</b> evita que costos y gastos crezcan al mismo ritmo que tus ventas.',
+    '📈 <b>Busca crecer con orden:</b> identifica qué productos o servicios te dejan mejores resultados.',
+    '🎯 <b>Trabaja con una meta:</b> define cuánto quieres ganar y revisa periódicamente si vas en camino.'
+   ];
+ } else {
+   recs=[
+    '🔎 <b>Encuentra el punto que más pesa:</b> compara cuánto representan tus costos y tus gastos sobre las ventas.',
+    '💰 <b>Revisa tus precios:</b> una mejora pequeña en el margen puede tener un efecto importante en tu ganancia.',
+    '📈 <b>Busca crecer con mejor resultado:</b> prioriza los productos o servicios que dejan más ganancia.'
+   ];
+ }
+ document.getElementById('recommendations').innerHTML='<b>💡 ¿QUÉ HARÍA YO EN TU LUGAR?</b><ol style="padding-left:22px;line-height:1.6"><li>'+recs[0]+'</li><li>'+recs[1]+'</li><li>'+recs[2]+'</li></ol><b>🎯 Tu próximo paso:</b><br>Empieza por la primera recomendación. Cuando la tengas clara, pasamos a la siguiente.';
+ document.getElementById('answer').innerHTML='';show(4)
+}
+function setQuestion(q){document.getElementById('question').value=q;document.getElementById('question').focus()}
+async function ask(){
+ let q=document.getElementById('question').value.trim(),d=data();
+ const answer=document.getElementById('answer');
+ if(!q){answer.innerHTML='✍️ <b>Cuéntame tu pregunta.</b> Puedes escribirla con tus propias palabras.';return}
+ answer.innerHTML='<div class="box"><b>🧠 Estoy analizando tus números…</b><br>Espera un momento.</div>';
+ try{
+   const response=await fetch('/api/ask',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+     question:q,business:document.getElementById('business').value,country:document.getElementById('country').value,
+     currency:document.getElementById('currency').value,sales:d.s,costs:d.c,expenses:d.e,profit:d.p,margin:d.m,goal:d.g
+   })});
+   const result=await response.json();
+   if(!response.ok) throw new Error(result.error||'No fue posible obtener una respuesta.');
+   const safe=String(result.answer||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+   answer.innerHTML='<div class="box"><b>🧠 Mi respuesta:</b><br>'+safe+'</div>';
+ }catch(err){
+   answer.innerHTML='<div class="box status-red"><b>⚠️ No pude responder todavía.</b><br>'+String(err.message).replace(/[<>]/g,'')+'</div>';
+ }
+}
+
+function downloadReport(){
+  const d=data();
+  const biz=document.getElementById('business').value;
+  const country=document.getElementById('country').value;
+  const statusText=document.getElementById('status').innerText.replace(/\n+/g,' ').trim();
+  const recEl=document.getElementById('recommendations');
+  const recText=recEl ? recEl.innerText.trim() : '';
+  const safe=(s)=>String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+  const total=d.c+d.e;
+  const max=Math.max(d.s,total,d.p,1);
+  const bars=[
+    ['Ventas',d.s],
+    ['Costos',d.c],
+    ['Gastos',d.e],
+    ['Ganancia',d.p]
+  ];
+  const barHtml=bars.map(([label,val])=>{
+    const width=Math.max(3,Math.min(100,(Math.max(0,val)/max)*100));
+    return `<div class="bar-row"><div class="bar-label"><span>${safe(label)}</span><b>${money(val)}</b></div><div class="bar-track"><div class="bar-fill" style="width:${width}%"></div></div></div>`;
+  }).join('');
+  const report=`<!doctype html><html lang="es"><head><meta charset="utf-8">
+<title>Mi Negocio Claro — Informe</title>
+<style>
+body{font-family:Arial,Helvetica,sans-serif;background:#f5f8f7;margin:0;color:#263b38}
+.page{max-width:760px;margin:28px auto;background:#fff;border-radius:24px;overflow:hidden;box-shadow:0 10px 35px rgba(30,60,55,.10)}
+.head{padding:30px 34px;background:linear-gradient(135deg,#eaf5f3,#f8fbfa)}
+.brand{font-size:26px;font-weight:800;letter-spacing:-.5px}.sub{color:#60716e;margin-top:6px}
+.content{padding:28px 34px}.status{padding:16px 18px;border-radius:16px;background:#f1f6f5;margin-bottom:22px}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin:18px 0}.metric{padding:16px;border:1px solid #e0e9e7;border-radius:16px}.metric span{display:block;color:#70807d;font-size:13px}.metric b{display:block;font-size:22px;margin-top:5px}
+h2{font-size:18px;margin:26px 0 12px}.bar-row{margin:13px 0}.bar-label{display:flex;justify-content:space-between;font-size:14px;margin-bottom:6px}.bar-track{height:12px;background:#e7eeec;border-radius:20px;overflow:hidden}.bar-fill{height:100%;background:#6a9c94;border-radius:20px}
+.box{padding:18px;border-radius:16px;background:#f7faf9;border:1px solid #e1eae8;white-space:pre-line;line-height:1.55}
+.footer{padding:20px 34px;border-top:1px solid #e7eeec;color:#71807d;font-size:11px;line-height:1.5}
+@media(max-width:560px){.page{margin:0;border-radius:0}.content,.head,.footer{padding-left:20px;padding-right:20px}.grid{grid-template-columns:1fr}}
+</style></head><body><div class="page">
+<div class="head"><div class="brand">Mi Negocio Claro</div><div class="sub">Tu negocio en 1 minuto · ${safe(biz)} · ${safe(country)}</div></div>
+<div class="content">
+<div class="status"><b>${safe(statusText)}</b><div style="margin-top:6px;color:#5f716d">Aquí tienes una mirada sencilla a lo que están diciendo tus números.</div></div>
+<div class="grid">
+<div class="metric"><span>Ventas</span><b>${money(d.s)}</b></div>
+<div class="metric"><span>Ganancia estimada</span><b>${money(d.p)}</b></div>
+<div class="metric"><span>Costos</span><b>${money(d.c)}</b></div>
+<div class="metric"><span>Gastos</span><b>${money(d.e)}</b></div>
+<div class="metric"><span>Margen</span><b>${(d.m*100).toFixed(1)}%</b></div>
+<div class="metric"><span>Meta de ganancia</span><b>${money(d.g)}</b></div>
+</div>
+<h2>📊 Así se mueven tus números</h2>${barHtml}
+<h2>🔎 Lo que vemos</h2><div class="box">${safe(statusText)}</div>
+<h2>💡 Recomendaciones</h2><div class="box">${safe(recText)}</div>
+<h2>🎯 Tu próximo paso</h2><div class="box">Elige una de las recomendaciones y conviértela en una acción concreta. Lo importante es empezar por una sola cosa y medir qué cambia.</div>
+</div>
+<div class="footer">Este informe es orientativo y se basa en los datos ingresados. Mi Negocio Claro no sustituye asesoría contable, tributaria o financiera profesional.</div>
+</div></body></html>`;
+  const blob=new Blob([report],{type:'text/html;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download='mi-negocio-claro-informe.html';
+  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+}
+
+/*
+  PUNTO DE CONEXIÓN CON IA REAL
+  --------------------------------
+  La interfaz queda preparada para enviar:
+  business, country, currency, sales, costs, expenses, goal,
+  profit, margin y question a un backend seguro.
+
+  Endpoint esperado:
+    POST /api/analyze
+    Body: JSON con esos datos.
+    Response: { answer: "..." }
+
+  La clave de la API NO debe colocarse en este HTML.
+*/
+
+</script>
+</body>
+</html>
