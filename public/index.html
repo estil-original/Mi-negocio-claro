@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Mi Negocio Claro — App V1</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script>window.addEventListener("error",function(e){var m=document.getElementById("authMessage");if(m&&e&&e.message){m.innerHTML="<div class=\"auth-error\">⚠️ La pantalla de acceso encontró un problema. Recarga la página e inténtalo de nuevo.</div>";}});</script>
 <style>
 *{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:linear-gradient(145deg,#e8faf6,#f6f2ff);color:#263238}
@@ -320,10 +321,28 @@ h2{font-size:18px;margin:26px 0 12px}.bar-row{margin:13px 0}.bar-label{display:f
 </div>
 <div class="footer">Este informe es orientativo y se basa en los datos ingresados. Mi Negocio Claro no sustituye asesoría contable, tributaria o financiera profesional.</div>
 </div></body></html>`;
-  const blob=new Blob([report],{type:'text/html;charset=utf-8'});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a'); a.href=url; a.download='mi-negocio-claro-informe.html';
-  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+  const holder=document.createElement('div');
+  holder.style.position='fixed'; holder.style.left='-10000px'; holder.style.top='0';
+  holder.style.width='760px'; holder.style.background='#fff';
+  holder.innerHTML=report.substring(report.indexOf('<body>')+6, report.lastIndexOf('</body>'));
+  document.body.appendChild(holder);
+  const page=holder.querySelector('.page') || holder;
+  const options={
+    margin:[10,10,10,10],
+    filename:'mi-negocio-claro-informe.pdf',
+    image:{type:'jpeg',quality:0.95},
+    html2canvas:{scale:2,useCORS:true,backgroundColor:'#ffffff'},
+    jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},
+    pagebreak:{mode:['css','legacy']}
+  };
+  if(window.html2pdf){
+    html2pdf().set(options).from(page).save().finally(()=>holder.remove());
+  }else{
+    holder.remove();
+    const win=window.open('','_blank');
+    if(win){ win.document.write(report); win.document.close(); setTimeout(()=>win.print(),500); }
+    else { alert('No pude preparar el PDF. Permite ventanas emergentes e inténtalo nuevamente.'); }
+  }
 }
 
 /*
