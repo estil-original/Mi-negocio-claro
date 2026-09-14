@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Mi Negocio Claro — App V1</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>window.addEventListener("error",function(e){var m=document.getElementById("authMessage");if(m&&e&&e.message){m.innerHTML="<div class=\"auth-error\">⚠️ La pantalla de acceso encontró un problema. Recarga la página e inténtalo de nuevo.</div>";}});</script>
 <style>
 *{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:linear-gradient(145deg,#e8faf6,#f6f2ff);color:#263238}
 .app{max-width:430px;min-height:100vh;margin:auto;padding:20px 17px}.card{background:#fff;border-radius:26px;padding:25px 20px;box-shadow:0 12px 35px rgba(30,45,55,.11)}
@@ -91,17 +92,26 @@ button{width:100%;padding:15px;margin-top:12px;border:0;border-radius:15px;backg
 
 <script>
 let supabaseClient=null;
+let authReady=false;
 async function initSupabase(){
+  const msg=document.getElementById('authMessage');
   try{
-    const r=await fetch('/api/config');
+    if(!window.supabase || typeof window.supabase.createClient!=='function'){
+      throw new Error('No se pudo cargar el componente de acceso.');
+    }
+    const r=await fetch('/api/config',{cache:'no-store'});
+    if(!r.ok) throw new Error('El servidor no respondió correctamente.');
     const cfg=await r.json();
-    if(!cfg.url||!cfg.publishableKey) throw new Error('Faltan las credenciales de Supabase en el entorno.');
+    if(!cfg.url||!cfg.publishableKey) throw new Error('Faltan las credenciales de acceso en el servidor.');
     supabaseClient=window.supabase.createClient(cfg.url,cfg.publishableKey);
-    const {data:{session}}=await supabaseClient.auth.getSession();
-    if(session) enterApp(session.user); else showAuth();
+    authReady=true;
+    const {data,error}=await supabaseClient.auth.getSession();
+    if(error) throw error;
+    if(data && data.session) enterApp(data.session.user); else showAuth();
     supabaseClient.auth.onAuthStateChange((_event,session)=>{ if(session) enterApp(session.user); else showAuth(); });
   }catch(e){
-    document.getElementById('authMessage').innerHTML='<div class="auth-error">⚠️ No pude preparar el acceso. '+String(e.message||e).replace(/[<>]/g,'')+'</div>';
+    authReady=false;
+    if(msg) msg.innerHTML='<div class="auth-error">⚠️ No pude preparar el acceso. '+String(e.message||e).replace(/[<>]/g,'')+'</div>';
   }
 }
 function showAuth(){
@@ -117,7 +127,7 @@ function enterApp(user){
   scrollTo(0,0);
 }
 async function signIn(){
-  if(!supabaseClient){return;}
+  if(!authReady || !supabaseClient){setAuthMessage('El acceso todavía se está preparando. Espera un momento y vuelve a intentarlo.','error');return;}
   const email=document.getElementById('authEmail').value.trim(), password=document.getElementById('authPassword').value;
   if(!email||!password){setAuthMessage('Escribe tu correo y contraseña.','error');return;}
   setAuthMessage('Entrando…','ok');
@@ -125,7 +135,7 @@ async function signIn(){
   if(error) setAuthMessage(error.message,'error');
 }
 async function signUp(){
-  if(!supabaseClient){return;}
+  if(!authReady || !supabaseClient){setAuthMessage('El acceso todavía se está preparando. Espera un momento y vuelve a intentarlo.','error');return;}
   const email=document.getElementById('authEmail').value.trim(), password=document.getElementById('authPassword').value;
   if(!email||!password){setAuthMessage('Escribe tu correo y crea una contraseña de al menos 8 caracteres.','error');return;}
   if(password.length<8){setAuthMessage('La contraseña debe tener al menos 8 caracteres.','error');return;}
