@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Mi Negocio Claro — App V1</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script>window.addEventListener("error",function(e){var m=document.getElementById("authMessage");if(m&&e&&e.message){m.innerHTML="<div class=\"auth-error\">⚠️ La pantalla de acceso encontró un problema. Recarga la página e inténtalo de nuevo.</div>";}});</script>
 <style>
 *{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:linear-gradient(145deg,#e8faf6,#f6f2ff);color:#263238}
 .app{max-width:430px;min-height:100vh;margin:auto;padding:20px 17px}.card{background:#fff;border-radius:26px;padding:25px 20px;box-shadow:0 12px 35px rgba(30,45,55,.11)}
@@ -33,7 +35,7 @@ button{width:100%;padding:15px;margin-top:12px;border:0;border-radius:15px;backg
 <p class="auth-note">Tu cuenta será la base para tu prueba PRO y para proteger tu acceso.</p>
 </div></section>
 
-<section id="s1" class="screen active"><div class="card">
+<section id="s1" class="screen"><div class="card">
 <div class="hero">✨</div><h1>Mi Negocio Claro</h1><span style="display:inline-block;margin-left:8px;padding:4px 8px;border-radius:999px;font-size:11px;background:#eef6f5;color:#315f5a;">APP V1</span><div id="userbar" class="userbar"></div>
 <div class="tag">Entiende tus números. Decide mejor.</div>
 <p class="quote">Tu negocio tiene una historia.<br>Nosotros te ayudamos a entenderla.</p>
@@ -91,17 +93,26 @@ button{width:100%;padding:15px;margin-top:12px;border:0;border-radius:15px;backg
 
 <script>
 let supabaseClient=null;
+let authReady=false;
 async function initSupabase(){
+  const msg=document.getElementById('authMessage');
   try{
-    const r=await fetch('/api/config');
+    if(!window.supabase || typeof window.supabase.createClient!=='function'){
+      throw new Error('No se pudo cargar el componente de acceso.');
+    }
+    const r=await fetch('/api/config',{cache:'no-store'});
+    if(!r.ok) throw new Error('El servidor no respondió correctamente.');
     const cfg=await r.json();
-    if(!cfg.url||!cfg.publishableKey) throw new Error('Faltan las credenciales de Supabase en el entorno.');
+    if(!cfg.url||!cfg.publishableKey) throw new Error('Faltan las credenciales de acceso en el servidor.');
     supabaseClient=window.supabase.createClient(cfg.url,cfg.publishableKey);
-    const {data:{session}}=await supabaseClient.auth.getSession();
-    if(session) enterApp(session.user); else showAuth();
+    authReady=true;
+    const {data,error}=await supabaseClient.auth.getSession();
+    if(error) throw error;
+    if(data && data.session) enterApp(data.session.user); else showAuth();
     supabaseClient.auth.onAuthStateChange((_event,session)=>{ if(session) enterApp(session.user); else showAuth(); });
   }catch(e){
-    document.getElementById('authMessage').innerHTML='<div class="auth-error">⚠️ No pude preparar el acceso. '+String(e.message||e).replace(/[<>]/g,'')+'</div>';
+    authReady=false;
+    if(msg) msg.innerHTML='<div class="auth-error">⚠️ No pude preparar el acceso. '+String(e.message||e).replace(/[<>]/g,'')+'</div>';
   }
 }
 function showAuth(){
@@ -117,7 +128,7 @@ function enterApp(user){
   scrollTo(0,0);
 }
 async function signIn(){
-  if(!supabaseClient){return;}
+  if(!authReady || !supabaseClient){setAuthMessage('El acceso todavía se está preparando. Espera un momento y vuelve a intentarlo.','error');return;}
   const email=document.getElementById('authEmail').value.trim(), password=document.getElementById('authPassword').value;
   if(!email||!password){setAuthMessage('Escribe tu correo y contraseña.','error');return;}
   setAuthMessage('Entrando…','ok');
@@ -125,7 +136,7 @@ async function signIn(){
   if(error) setAuthMessage(error.message,'error');
 }
 async function signUp(){
-  if(!supabaseClient){return;}
+  if(!authReady || !supabaseClient){setAuthMessage('El acceso todavía se está preparando. Espera un momento y vuelve a intentarlo.','error');return;}
   const email=document.getElementById('authEmail').value.trim(), password=document.getElementById('authPassword').value;
   if(!email||!password){setAuthMessage('Escribe tu correo y crea una contraseña de al menos 8 caracteres.','error');return;}
   if(password.length<8){setAuthMessage('La contraseña debe tener al menos 8 caracteres.','error');return;}
@@ -310,10 +321,29 @@ h2{font-size:18px;margin:26px 0 12px}.bar-row{margin:13px 0}.bar-label{display:f
 </div>
 <div class="footer">Este informe es orientativo y se basa en los datos ingresados. Mi Negocio Claro no sustituye asesoría contable, tributaria o financiera profesional.</div>
 </div></body></html>`;
-  const blob=new Blob([report],{type:'text/html;charset=utf-8'});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a'); a.href=url; a.download='mi-negocio-claro-informe.html';
-  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+  const holder=document.createElement('div');
+  holder.style.position='absolute'; holder.style.left='0'; holder.style.top='0';
+  holder.style.width='760px'; holder.style.background='#fff';
+  holder.style.zIndex='-1'; holder.style.pointerEvents='none';
+  holder.innerHTML=report.substring(report.indexOf('<body>')+6, report.lastIndexOf('</body>'));
+  document.body.appendChild(holder);
+  const page=holder.querySelector('.page') || holder;
+  const options={
+    margin:[10,10,10,10],
+    filename:'mi-negocio-claro-informe.pdf',
+    image:{type:'jpeg',quality:0.95},
+    html2canvas:{scale:2,useCORS:true,backgroundColor:'#ffffff'},
+    jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},
+    pagebreak:{mode:['css','legacy']}
+  };
+  if(window.html2pdf){
+    html2pdf().set(options).from(page).save().finally(()=>holder.remove());
+  }else{
+    holder.remove();
+    const win=window.open('','_blank');
+    if(win){ win.document.write(report); win.document.close(); setTimeout(()=>win.print(),500); }
+    else { alert('No pude preparar el PDF. Permite ventanas emergentes e inténtalo nuevamente.'); }
+  }
 }
 
 /*
