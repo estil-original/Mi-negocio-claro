@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Mi Negocio Claro — App V1</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:linear-gradient(145deg,#e8faf6,#f6f2ff);color:#263238}
 .app{max-width:430px;min-height:100vh;margin:auto;padding:20px 17px}.card{background:#fff;border-radius:26px;padding:25px 20px;box-shadow:0 12px 35px rgba(30,45,55,.11)}
@@ -13,17 +14,31 @@ label{display:block;font-weight:700;margin:14px 0 7px}input,select{width:100%;pa
 button{width:100%;padding:15px;margin-top:12px;border:0;border-radius:15px;background:#35b89a;color:#fff;font-size:16px;font-weight:700}button.secondary{background:#eef7f5;color:#267d6c}
 .metric{padding:13px;margin:8px 0;background:#f7f9fa;border-radius:14px}.metric b{float:right}.box{margin-top:12px;padding:15px;border-left:5px solid #35b89a;background:#edf9f5;border-radius:12px;line-height:1.55}.small{text-align:center;color:#7b8794;font-size:12px;margin-top:12px}
 .status-red{border-left-color:#d9534f;background:#fff0ef}.status-yellow{border-left-color:#e6a72e;background:#fff8e7}.status-blue{border-left-color:#5b8def;background:#eef4ff}
+
+.auth-note{font-size:13px;color:#68737d;line-height:1.45;margin-top:10px}.auth-error{margin-top:12px;padding:12px;border-radius:12px;background:#fff0ef;color:#9b2c2c;line-height:1.45}.auth-ok{margin-top:12px;padding:12px;border-radius:12px;background:#edf9f5;color:#267d6c;line-height:1.45}.userbar{font-size:12px;color:#68737d;text-align:center;margin-bottom:10px}.logout{background:#fff;color:#267d6c;border:1px solid #cfe3df;padding:10px;margin-top:8px}
 </style>
 </head>
 <body>
 <div class="app">
 
-<section id="s1" class="screen active"><div class="card">
-<div class="hero">✨</div><h1>Mi Negocio Claro</h1><span style="display:inline-block;margin-left:8px;padding:4px 8px;border-radius:999px;font-size:11px;background:#eef6f5;color:#315f5a;">APP V1</span>
+<section id="auth" class="screen active"><div class="card">
+<div class="hero">🔐</div><h1>Mi Negocio Claro</h1>
+<div class="tag">Tu cuenta para cuidar tu negocio.</div>
+<p class="quote">Crea tu cuenta gratis o entra si ya tienes una.</p>
+<label>Correo electrónico</label><input id="authEmail" type="email" autocomplete="email" placeholder="tu@email.com">
+<label>Contraseña</label><input id="authPassword" type="password" autocomplete="current-password" placeholder="Mínimo 8 caracteres">
+<button id="authPrimary" onclick="signIn()">ENTRAR</button>
+<button class="secondary" onclick="signUp()">CREAR CUENTA GRATIS</button>
+<div id="authMessage"></div>
+<p class="auth-note">Tu cuenta será la base para tu prueba PRO y para proteger tu acceso.</p>
+</div></section>
+
+<section id="s1" class="screen"><div class="card">
+<div class="hero">✨</div><h1>Mi Negocio Claro</h1><span style="display:inline-block;margin-left:8px;padding:4px 8px;border-radius:999px;font-size:11px;background:#eef6f5;color:#315f5a;">APP V1</span><div id="userbar" class="userbar"></div>
 <div class="tag">Entiende tus números. Decide mejor.</div>
 <p class="quote">Tu negocio tiene una historia.<br>Nosotros te ayudamos a entenderla.</p>
 <button onclick="show(2)">COMENZAR</button>
-<div class="small">No necesitas conocimientos contables.</div>
+<div class="small">No necesitas conocimientos contables.</div><button class="logout" onclick="signOut()">Cerrar sesión</button>
 </div></section>
 
 <section id="s2" class="screen"><div class="card">
@@ -75,6 +90,59 @@ button{width:100%;padding:15px;margin-top:12px;border:0;border-radius:15px;backg
 </div>
 
 <script>
+let supabaseClient=null;
+async function initSupabase(){
+  try{
+    const r=await fetch('/api/config');
+    const cfg=await r.json();
+    if(!cfg.url||!cfg.publishableKey) throw new Error('Faltan las credenciales de Supabase en el entorno.');
+    supabaseClient=window.supabase.createClient(cfg.url,cfg.publishableKey);
+    const {data:{session}}=await supabaseClient.auth.getSession();
+    if(session) enterApp(session.user); else showAuth();
+    supabaseClient.auth.onAuthStateChange((_event,session)=>{ if(session) enterApp(session.user); else showAuth(); });
+  }catch(e){
+    document.getElementById('authMessage').innerHTML='<div class="auth-error">⚠️ No pude preparar el acceso. '+String(e.message||e).replace(/[<>]/g,'')+'</div>';
+  }
+}
+function showAuth(){
+  document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));
+  document.getElementById('auth').classList.add('active');
+}
+function enterApp(user){
+  document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));
+  document.getElementById('s1').classList.add('active');
+  const email=(user&&user.email)||'Cuenta';
+  document.getElementById('userbar').textContent='Sesión iniciada: '+email;
+  document.getElementById('authMessage').innerHTML='';
+  scrollTo(0,0);
+}
+async function signIn(){
+  if(!supabaseClient){return;}
+  const email=document.getElementById('authEmail').value.trim(), password=document.getElementById('authPassword').value;
+  if(!email||!password){setAuthMessage('Escribe tu correo y contraseña.','error');return;}
+  setAuthMessage('Entrando…','ok');
+  const {error}=await supabaseClient.auth.signInWithPassword({email,password});
+  if(error) setAuthMessage(error.message,'error');
+}
+async function signUp(){
+  if(!supabaseClient){return;}
+  const email=document.getElementById('authEmail').value.trim(), password=document.getElementById('authPassword').value;
+  if(!email||!password){setAuthMessage('Escribe tu correo y crea una contraseña de al menos 8 caracteres.','error');return;}
+  if(password.length<8){setAuthMessage('La contraseña debe tener al menos 8 caracteres.','error');return;}
+  setAuthMessage('Creando tu cuenta…','ok');
+  const {data,error}=await supabaseClient.auth.signUp({email,password});
+  if(error){setAuthMessage(error.message,'error');return;}
+  if(data.session){enterApp(data.user);}
+  else setAuthMessage('Cuenta creada. Revisa tu correo para confirmar la cuenta y después entra aquí.','ok');
+}
+async function signOut(){
+  if(supabaseClient) await supabaseClient.auth.signOut();
+}
+function setAuthMessage(msg,type){
+  const cls=type==='error'?'auth-error':'auth-ok';
+  document.getElementById('authMessage').innerHTML='<div class="'+cls+'">'+String(msg).replace(/[<>]/g,'')+'</div>';
+}
+
 function show(n){document.querySelectorAll('.screen').forEach(function(x){x.classList.remove('active')});document.getElementById('s'+n).classList.add('active');scrollTo(0,0)}
 function data(){let s=+document.getElementById('sales').value||0,c=+document.getElementById('costs').value||0,e=+document.getElementById('expenses').value||0,g=+document.getElementById('goal').value||0,t=c+e,p=s-t,m=s?p/s:0;return{s,c,e,g,t,p,m}}
 function money(n){return document.getElementById('currency').value+Number(n).toLocaleString('es-CL',{maximumFractionDigits:0})}
@@ -221,6 +289,8 @@ h2{font-size:18px;margin:26px 0 12px}.bar-row{margin:13px 0}.bar-label{display:f
 .box{padding:18px;border-radius:16px;background:#f7faf9;border:1px solid #e1eae8;white-space:pre-line;line-height:1.55}
 .footer{padding:20px 34px;border-top:1px solid #e7eeec;color:#71807d;font-size:11px;line-height:1.5}
 @media(max-width:560px){.page{margin:0;border-radius:0}.content,.head,.footer{padding-left:20px;padding-right:20px}.grid{grid-template-columns:1fr}}
+
+.auth-note{font-size:13px;color:#68737d;line-height:1.45;margin-top:10px}.auth-error{margin-top:12px;padding:12px;border-radius:12px;background:#fff0ef;color:#9b2c2c;line-height:1.45}.auth-ok{margin-top:12px;padding:12px;border-radius:12px;background:#edf9f5;color:#267d6c;line-height:1.45}.userbar{font-size:12px;color:#68737d;text-align:center;margin-bottom:10px}.logout{background:#fff;color:#267d6c;border:1px solid #cfe3df;padding:10px;margin-top:8px}
 </style></head><body><div class="page">
 <div class="head"><div class="brand">Mi Negocio Claro</div><div class="sub">Tu negocio en 1 minuto · ${safe(biz)} · ${safe(country)}</div></div>
 <div class="content">
@@ -261,6 +331,7 @@ h2{font-size:18px;margin:26px 0 12px}.bar-row{margin:13px 0}.bar-label{display:f
   La clave de la API NO debe colocarse en este HTML.
 */
 
+initSupabase();
 </script>
 </body>
 </html>
