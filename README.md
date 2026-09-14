@@ -15,3 +15,9 @@ npm start
 
 ## Despliegue
 Usar un Web Service de Node/Express. En el hosting, configurar `OPENAI_API_KEY` como variable secreta.
+
+
+## Supabase Auth (staging)
+The browser receives only SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY from /api/config. Never place SUPABASE_SECRET_KEY in public/index.html or in the browser.
+
+Required environment variables: SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY.

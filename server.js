@@ -8,12 +8,37 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const port = Number(process.env.PORT) || 3000;
 const host = '0.0.0.0';
-const client = process.env.OPENAI_API_KEY ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null;
+const client = process.env.OPENAI_API_KEY ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY, timeout: 20000, maxRetries: 1 }) : null;
 const model = process.env.OPENAI_MODEL || 'gpt-5.6-luna';
 
 app.disable('x-powered-by');
+app.use((_req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Referrer-Policy', 'no-referrer');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  next();
+});
 app.use(express.json({ limit: '32kb' }));
 app.use(express.static(path.join(__dirname, 'public')));
+
+const rateWindowMs = 15 * 60 * 1000;
+const rateMax = 30;
+const rateMap = new Map();
+function rateLimit(req, res, next) {
+  const now = Date.now();
+  const key = req.ip || req.socket.remoteAddress || 'unknown';
+  const current = rateMap.get(key);
+  if (!current || now - current.start >= rateWindowMs) {
+    rateMap.set(key, { start: now, count: 1 });
+    return next();
+  }
+  current.count += 1;
+  if (current.count > rateMax) {
+    return res.status(429).json({ error: 'Has alcanzado el límite temporal de preguntas. Inténtalo nuevamente más tarde.' });
+  }
+  return next();
+}
 
 const SYSTEM_PROMPT = `
 Eres la analista financiera de Mi Negocio Claro.
@@ -40,11 +65,18 @@ function num(value) {
   return Number.isFinite(n) ? n : 0;
 }
 
+app.get('/api/config', (_req, res) => {
+  res.json({
+    url: process.env.SUPABASE_URL || '',
+    publishableKey: process.env.SUPABASE_PUBLISHABLE_KEY || ''
+  });
+});
+
 app.get('/health', (_req, res) => {
   res.json({ ok: true, aiConfigured: Boolean(client), model });
 });
 
-app.post('/api/ask', async (req, res) => {
+app.post('/api/ask', rateLimit, async (req, res) => {
   try {
     if (!client) return res.status(503).json({ error: 'La IA todavía no está configurada en el servidor.' });
 
