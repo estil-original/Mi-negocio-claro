@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: Mi-negocio-claro-1
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - fromGroup: supabase-staging
